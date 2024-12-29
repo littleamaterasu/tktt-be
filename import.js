@@ -25,6 +25,10 @@ const readDataFromFile = (filePath) => {
 const prepareBulkPayload = (indexName, data) => {
     const bulkPayload = [];
     data.forEach((doc) => {
+        // Gộp trường content và title thành content-title
+        const contentTitle = `${doc.content} ${doc.title}`;
+        doc['content-title'] = contentTitle; // Thêm trường content-title vào document
+
         bulkPayload.push({ index: { _index: indexName, _id: doc.id } });
         bulkPayload.push(doc);
     });

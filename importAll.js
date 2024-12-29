@@ -8,12 +8,12 @@ const client = new Client({
 });
 
 // Tên chỉ mục
-const INDEX_NAME = 'it4863';
+const INDEX_NAME = 'it4863-news';
 
 // Hàm đọc tất cả các file JSON trong thư mục
 const readJSONFiles = (directory) => {
     try {
-        const files = fs.readdirSync(directory);
+        const files = ['./articles.json', './data.json', './processed_data.json']
         const jsonData = [];
 
         files.forEach((file) => {
@@ -35,6 +35,10 @@ const readJSONFiles = (directory) => {
 const prepareBulkPayload = (indexName, data) => {
     const bulkPayload = [];
     data.forEach((doc, index) => {
+        // Gộp trường content và title thành content-title
+        const contentTitle = `${doc.content} ${doc.title}`;
+        doc['content-title'] = contentTitle; // Thêm trường content-title vào document
+
         bulkPayload.push({ index: { _index: indexName, _id: doc.id || index + 1 } });
         bulkPayload.push(doc);
     });

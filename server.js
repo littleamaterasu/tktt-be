@@ -19,9 +19,28 @@ const client = new Client({
 const app = express();
 const port = 3000;
 
-const indices = ['it4863-news', 'it4863-animals', 'it4863-plants', 'it4863-songs', 'it4863-mangas', 'it4863-laws', 'it4863-proverbs', 'it4863-health']
+const indices = ['it4863-news', 'it4863-animals', 'it4863-plants', 'it4863-songs', 'it4863-mangas', 'it4863-laws', 'it4863-proverbs', 'it4863-healths']
+const all = 'it4863-all';
+const probability = {
+    'it4863-news': 3000.0 / 9899,
+    'it4863-animals': 998.0 / 9899,
+    'it4863-plants': 1000.0 / 9899,
+    'it4863-songs': 1000.0 / 9899,
+    'it4863-mangas': 1000.0 / 9899,
+    'it4863-laws': 1000.0 / 9899,
+    'it4863-proverbs': 902.0 / 9899,
+    'it4863-health': 999.0 / 9899
+}
 
 const dictionary = {};
+indices.forEach(index => {
+    dictionary[index] = {};
+})
+const vocab = {};
+indices.forEach(index => {
+    vocab[index] = 0;
+})
+let vocabCount = 0;
 
 const getDictionary = async (indexName) => {
     try {
@@ -33,7 +52,7 @@ const getDictionary = async (indexName) => {
                     terms_content: {
                         terms: {
                             field: "content-title",
-                            size: 1000000,  // Adjust size based on how many terms you want to collect
+                            size: 65536,
                         }
                     }
                 }
@@ -65,11 +84,13 @@ const makeDictionary = async () => {
 
         // Populate the dictionary with the terms and counts
         indexDict.forEach(token => {
+            vocab[element] += token.count;
             dictionary[element][token.name] = token.count;
         });
     }
 
-    console.log(dictionary); // Output the full dictionary
+    const totalToken = await getDictionary(all);
+    vocabCount = totalToken.length;
 }
 
 // Run the makeDictionary function
@@ -101,9 +122,32 @@ app.post('/search', async (req, res) => {
 
         const analyzedKeywords = analyzeResponse.tokens.map(token => token.token);
 
+        // Đếm số lần xuất hiện của mỗi token
+        const tokenCount = analyzedKeywords.reduce((countMap, token) => {
+            countMap[token] = (countMap[token] || 0) + 1;
+            return countMap;
+        }, {});
+
+        let index = 'it4863';
+        let point = 0.0;
+
+        indices.forEach(element => {
+            let currentPoint = probability[element];
+            analyzedKeywords.forEach(keyword => {
+                currentPoint *= Math.pow((1.0 + dictionary[element][keyword] || 0) / (vocabCount + vocab[element]), tokenCount[keyword]);
+            })
+
+            if (point < currentPoint) {
+                index = element;
+                point = currentPoint;
+            }
+        })
+
+        console.log(index)
+
         // Tiến hành tìm kiếm
         const response = await client.search({
-            index: elasticsearchIndexName,
+            index: index,
             body: {
                 query: {
                     bool: {
