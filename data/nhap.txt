@@ -1,0 +1,10 @@
+curl -X GET "http://localhost:9200/it4863/_search?pretty" -H "Content-Type: application/json" -d '
+{
+  "query": {
+    "term": {
+      "content": { 
+        "value": "đá bóng"
+      }
+    }
+  }
+}'
