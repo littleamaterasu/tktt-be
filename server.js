@@ -9,7 +9,7 @@ const e = require('express');
 require('dotenv').config();
 // Cấu hình Elasticsearch
 const elasticsearchUrl = process.env.ES_URL;
-const elasticsearchIndexName = 'it4863-animals';
+const elasticsearchIndexName = 'it4863-all';
 console.log(elasticsearchUrl, elasticsearchIndexName)
 
 const client = new Client({
@@ -29,7 +29,7 @@ const probability = {
     'it4863-mangas': 1000.0 / 9899,
     'it4863-laws': 1000.0 / 9899,
     'it4863-proverbs': 902.0 / 9899,
-    'it4863-health': 999.0 / 9899
+    'it4863-healths': 999.0 / 9899
 }
 
 const dictionary = {};
@@ -128,14 +128,15 @@ app.post('/search', async (req, res) => {
             return countMap;
         }, {});
 
-        let index = 'it4863';
+        let index = 'it4863-all';
         let point = 0.0;
 
         indices.forEach(element => {
             let currentPoint = probability[element];
             analyzedKeywords.forEach(keyword => {
-                currentPoint *= Math.pow((1.0 + dictionary[element][keyword] || 0) / (vocabCount + vocab[element]), tokenCount[keyword]);
+                currentPoint *= Math.pow((1.0 + (dictionary[element][keyword] || 0)) / (vocabCount + vocab[element]), tokenCount[keyword]);
             })
+            console.log("index", element, "point", currentPoint)
 
             if (point < currentPoint) {
                 index = element;
